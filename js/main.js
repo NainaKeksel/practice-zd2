@@ -28,9 +28,9 @@ new Vue({
     data() {
         return {
             columns: [
-                { title: 'Три', cards: [], locked: false },
-                { title: 'Пять', cards: [] },
-                { title: 'Бесконечно', cards: [] }
+                { title: '3', cards: [], locked: false },
+                { title: '5', cards: [] },
+                { title: 'без ограничений', cards: [] }
             ],
             newCardTitle: '',
             newCardItems: ['', '', '', '', ''],
@@ -60,10 +60,10 @@ new Vue({
         },
         addCard(columnIndex) {
             const items = this.newCardItems
-                .filter(item => item.trim() !== '')
+                .filter(item => item.trim() !== '') // Убираем пустые пункты
                 .map(item => ({ text: item, completed: false }));
             if (items.length < 3 || items.length > 5) {
-                alert('Карточка должна иметь минимум 3 пункта.');
+                alert('Карточка должна содержать от 3 до 5 пунктов.');
                 return;
             }
              const newCard = {
@@ -79,7 +79,7 @@ new Vue({
         },
         toggleItem(columnIndex, cardIndex, itemIndex) {
             const card = this.columns[columnIndex].cards[cardIndex];
-            if (card.locked) return;
+            if (card.locked) return; // Если карточка заблокирована, ничего не делаем
             card.items[itemIndex].completed = !card.items[itemIndex].completed;
             this.checkCardCompletion(columnIndex, cardIndex);
             this.checkLockState();
@@ -97,18 +97,18 @@ new Vue({
             }
         },
         moveCard(fromColumn, toColumn, cardIndex) {
+            this.checkLockState();
             const card = this.columns[fromColumn].cards.splice(cardIndex, 1)[0];
             card.completedDate = toColumn === 2 ? new Date().toLocaleString() : null;
             this.columns[toColumn].cards.push(card);
-            this.checkLockState();
         },
         checkLockState() {
             const isSecondColumnFull = this.columns[1].cards.length >= this.maxCardsInColumnTwo;
             const hasOver50Percent = this.columns[0].cards.some(card => {
                 const completedCount = card.items.filter(item => item.completed).length;
-                return completedCount / card.items.length > 0.5;
+                return completedCount / card.items.length >= 0.5;
             });
-            this.columns[0].locked = isSecondColumnFull;
+            this.columns[0].locked = isSecondColumnFull && hasOver50Percent;
             this.columns[0].cards.forEach(card => {
                 card.locked = this.columns[0].locked;
             });
@@ -119,40 +119,41 @@ new Vue({
             const isSecondColumnFull = this.columns[1].cards.length >= this.maxCardsInColumnTwo;
             const hasOver50Percent = this.columns[0].cards.some(card => {
                 const completedCount = card.items.filter(item => item.completed).length;
-                return completedCount;
+                return completedCount / card.items.length >= 0.5;
             });
-            return isSecondColumnFull;
+            return isSecondColumnFull && hasOver50Percent;
         }
     },
     template: `
        <div id="app">
-     <div v-for="(column, columnIndex) in columns" :key="columnIndex" class="column" >
-        <h2>{{ column.title }}</h2>
-         <form v-if="columnIndex === 0 && canAddCard(columnIndex)" @submit.prevent="addCard(columnIndex)">
-            <input class="form" type="text" v-model="newCardTitle" placeholder="Заголовок" required>
-            <input class="form" type="text" v-model="newCardItems[0]" placeholder="Пункт 1" required>
-            <input class="form" type="text" v-model="newCardItems[1]" placeholder="Пункт 2" required>
-            <input class="form" type="text" v-model="newCardItems[2]" placeholder="Пункт 3" required>
-            <input class="form" type="text" v-model="newCardItems[3]" placeholder="Пункт 4 (опционально)">
-            <input class="form" type="text" v-model="newCardItems[4]" placeholder="Пункт 5 (опционально)">
-           <button type="submit" class="but" :disabled="isAddButtonDisabled">Добавить</button>
-        </form>
-        <div v-for="(card, cardIndex) in column.cards" :key="cardIndex" class="note" :class="{ locked: card.locked }">
-            <p class="title">{{ card.title }}</p>
-            <ul>
-                <li v-for="(item, index) in card.items" :key="index" class="anti-dots">
-                    <input
-                        type="checkbox"
-                        :checked="item.completed"
-                        @change="toggleItem(columnIndex, cardIndex, index)"
-                        :disabled="card.locked"
-                    />
-                    {{ item.text }}
-                </li>
-            </ul>
+     <div v-for="(column, columnIndex) in columns" :key="columnIndex" class="column">
+            <h2>{{ column.title }}</h2>
+            <form v-if="columnIndex === 0 && canAddCard(columnIndex)" @submit.prevent="addCard(columnIndex)">
+                <input class="form" type="text" v-model="newCardTitle" placeholder="Заголовок" required>
+                <input class="form" type="text" v-model="newCardItems[0]" placeholder="Пункт 1" required>
+                <input class="form" type="text" v-model="newCardItems[1]" placeholder="Пункт 2" required>
+                <input class="form" type="text" v-model="newCardItems[2]" placeholder="Пункт 3" required>
+                <input class="form" type="text" v-model="newCardItems[3]" placeholder="Пункт 4 (опционально)">
+                <input class="form" type="text" v-model="newCardItems[4]" placeholder="Пункт 5 (опционально)">
+                <button type="submit" class="but" :disabled="isAddButtonDisabled">Добавить</button>
+            </form>
+            <div v-for="(card, cardIndex) in column.cards" :key="cardIndex" class="note" :class="{ locked: card.locked }">
+                <p class="title">{{ card.title }}</p>
+                <ul>
+                    <li v-for="(item, index) in card.items" :key="index" class="anti-dots">
+                        <input
+                            type="checkbox"
+                            :checked="item.completed"
+                            @change="toggleItem(columnIndex, cardIndex, index)"
+                            :disabled="card.locked"
+                        />
+                        {{ item.text }}
+                    </li>
+                </ul>
+                <p v-if="card.completedDate">Дата окончания: {{ card.completedDate }}</p>
+            </div>
             <p v-if="card.completedDate">Дата окончания: {{ card.completedDate }}</p>
         </div>
     </div>
-</div>
     `
 });
