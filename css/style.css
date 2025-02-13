@@ -1,6 +1,6 @@
 #app {
     display: flex;
-    gap: 20px;
+    justify-content: space-around;
 }
 .column {
     border: 1px solid #ccc;
